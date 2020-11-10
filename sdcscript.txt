@@ -1,0 +1,54 @@
+
+#!/bin/bash
+restart_func(){
+if [ -f "/tmp/filecheck2.txt" ]
+then
+    echo "check2 file exists"
+else
+    echo "check2 file doesn't exist.. will start this patch after 24hours..."
+    ls -R /opt/streamsets-libs-extras >  /tmp/filecheck2.txt
+    return 0
+fi
+
+dc_count=$(expr $(echo ${HOSTNAME} | sed 's/[^0-9]*//g') - 1 )
+echo "sleep 15"
+sleep $(expr 15 \* $dc_count )
+
+ls -R /opt/streamsets-libs-extras >  /tmp/filecheck1.txt
+
+sdc_count=1
+diff /tmp/filecheck1.txt /tmp/filecheck2.txt > /tmp/filecheck3.txt
+if [ -s /tmp/filecheck3.txt ]
+then
+while [ $sdc_count -le 3 ]
+do
+    if [ $sdc_count -eq 1 ]
+    then
+
+        echo "Restart SDC"
+    ##    systemctl restart sdc
+
+    else
+
+        echo "Restart SDC$sdc_count"
+    ##    systemctl restart sdc$sdc_count
+
+    fi
+
+    echo  "sleep 5"
+    sleep 5
+    sdc_count=$(expr $sdc_count + 1 )
+
+    done
+
+
+    mv /tmp/filecheck1.txt /tmp/filecheck2.txt
+    else
+
+    echo "External Libraries are not updated.. Not proceeding with restart"
+
+    fi
+    rm /tmp/filecheck3.txt
+}
+
+restart_func
